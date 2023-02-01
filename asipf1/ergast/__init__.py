@@ -267,20 +267,31 @@ def race_results(
     """
     Obtain the race results for the specified race or query.
     If the results for the specified race are not yet available the result will be empty.
+
     The value of the position attribute in the Result element is always an integer,
     giving the finishing order of all drivers.
-    The value of the positionText attribute is either an integer (finishing position),
-    "R" (retired), "D" (disqualified), "E" (excluded), "W" (withdrawn), "F" (failed to
-    qualify) or "N" (not classified). Further information is given by the status
-    element. A grid position value of "0" indicates the driver started from the pit lane.
+
+    The value of the positionText attribute is either:
+    * An integer (finishing position)
+    * "R" (retired)
+    * "D" (disqualified)
+    * "E" (excluded)
+    * "W" (withdrawn)
+    * "F" (failed to qualify)
+    * "N" (not classified).
+    Further information is given by the status element.
+
+    A grid position value of "0" indicates the driver started from the pit lane.
+
     Fastest lap times are included from the 2004 season onwards.
+    The <rank> value refers to how the fastest lap for each driver is ranked in relation
+    to those of other drivers.
+
     Drivers who participated in the 2014 season onwards have a permanent driver number.
     For these drivers there is a corresponding field in the Driver element. However,
     this may differ from the value of the number attribute of the Result element in
     earlier seasons or where the reigning champion has chosen to use “1” rather than
     his permanent driver number.
-    The <rank> value refers to how the fastest lap for each driver is ranked in relation
-    to those of other drivers.
 
     Args:
         year (Optional[int], optional): Season calendar year. Should be from 2003
@@ -1121,7 +1132,7 @@ def lap_times(
             ra.year, ra.round, ra.name, ra.date, ra.time, ra.url, 
             ci.circuitRef, ci.name, ci.location, ci.country, ci.url, ci.lat, ci.lng, ci.alt,
             dr.driverRef,
-            la.lap, la.position, la.time
+            la.lap, la.position, la.time, la.milliseconds
         FROM lapTimes la, races ra, circuits ci, drivers dr
         WHERE ra.circuitId=ci.circuitId
             AND la.driverId=dr.driverId
@@ -1160,6 +1171,7 @@ def lap_times(
             "lap",
             "position",
             "lapTime",
+            "millis",
         ],
     )
     return df
