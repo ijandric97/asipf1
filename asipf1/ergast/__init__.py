@@ -9,7 +9,7 @@ from ergast.db import con
 def season_list(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -27,7 +27,7 @@ def season_list(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -110,7 +110,7 @@ def season_list(
             {f"AND ds.driverId=dr.driverId AND dr.driverRef='{driver}'" if driver else ""}
             {f"AND ds.positionText='{driverStanding}'" if driverStanding else ""}
             {f"AND s.year='{year}'" if year else ""}
-            {f"AND ra.round='{round}'" if round else (f"AND ra.round=(SELECT MAX(round) FROM races WHERE races.year='{year}')" if year else "AND (ra.year, ra.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)")}
+            {f"AND ra.round='{race}'" if race else (f"AND ra.round=(SELECT MAX(round) FROM races WHERE races.year='{year}')" if year else "AND (ra.year, ra.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)")}
             """
         )
     else:
@@ -127,7 +127,7 @@ def season_list(
             {f"AND re.rank='{fastest}'" if fastest else ""}
             {f"AND re.positionText='{result}'" if result else ""}
             {f"AND s.year='{year}'" if year else ""}
-            {f"AND ra.round='{round}'" if round else ""}
+            {f"AND ra.round='{race}'" if race else ""}
             """
         )
 
@@ -156,7 +156,7 @@ def season_list(
 def race_schedule(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -173,7 +173,7 @@ def race_schedule(
     Args:
         year (Optional[int], optional): Season calendar year. Should be from 2003
             onwards. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -210,7 +210,7 @@ def race_schedule(
         {", constructors" if constructor else ""}
         WHERE ra.circuitId=c.circuitId
         {f"AND ra.year='{year}'" if year else ""}
-        {f"AND ra.round='{round}'" if round else ""}
+        {f"AND ra.round='{race}'" if race else ""}
         {f"AND c.circuitRef='{circuit}'" if circuit else ""}
         {"AND ra.raceId=re.raceId" if driver or constructor or grid or result or status or fastest else ""}
         {f"AND re.constructorId=constructors.constructorId AND constructors.constructorRef='{constructor}'" if constructor else ""}
@@ -253,7 +253,7 @@ def race_schedule(
 def race_results(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -296,7 +296,7 @@ def race_results(
     Args:
         year (Optional[int], optional): Season calendar year. Should be from 2003
             onwards. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -338,7 +338,7 @@ def race_results(
         AND re.constructorId=co.constructorId
         AND re.statusId=st.statusId
         {f"AND ra.year='{year}'" if year else ""}
-        {f"AND ra.round='{round}'" if round else ""}
+        {f"AND ra.round='{race}'" if race else ""}
         {f"AND ci.circuitRef='{circuit}'" if circuit else ""}
         {f"AND co.constructorRef='{constructor}'" if constructor else ""}
         {f"AND dr.driverRef='{driver}'" if driver else ""}
@@ -406,7 +406,7 @@ def race_results(
 def qualifying_results(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -429,7 +429,7 @@ def qualifying_results(
     Args:
         year (Optional[int], optional): Season calendar year. Should be from 2003
             onwards. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -471,7 +471,7 @@ def qualifying_results(
         AND qu.constructorId=co.constructorId
         {"AND re.raceId=qu.raceId AND re.driverId=qu.driverId AND re.constructorId=qu.constructorId" if grid or result or status or fastest else ""}
         {f"AND ra.year='{year}'" if year else ""}
-        {f"AND ra.round='{round}'" if round else ""}
+        {f"AND ra.round='{race}'" if race else ""}
         {f"AND ci.circuitRef='{circuit}'" if circuit else ""}
         {f"AND co.constructorRef='{constructor}'" if constructor else ""}
         {f"AND dr.driverRef='{driver}'" if driver else ""}
@@ -530,7 +530,7 @@ def qualifying_results(
 def driver_standings(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     driver: Optional[str] = None,
     driverStanding: Optional[int] = None,
     offset: Optional[int] = None,
@@ -540,7 +540,7 @@ def driver_standings(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         driver (Optional[str], optional): Limit results to a specific driver
             (e.g. alonso). Defaults to None.
@@ -567,7 +567,7 @@ def driver_standings(
         {f"AND ds.positionText='{driverStanding}'" if driverStanding else ""}
         {f"AND d.driverRef='{driver}'" if driver else ""}
         {f"AND r.year='{year}'" if year else ""}
-        {f"AND r.round='{round}'" if round else (f"AND r.round=(SELECT MAX(round) FROM driverStandings ds, races r WHERE ds.raceId=r.raceId AND r.year='{year}')" if year else "AND (r.year, r.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)")}
+        {f"AND r.round='{race}'" if race else (f"AND r.round=(SELECT MAX(round) FROM driverStandings ds, races r WHERE ds.raceId=r.raceId AND r.year='{year}')" if year else "AND (r.year, r.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)")}
         ORDER BY r.year, ds.position
         {f"LIMIT {offset}, {limit}" if offset and limit else ""}
         """
@@ -603,7 +603,7 @@ def driver_standings(
 def constructor_standings(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     constructor: Optional[str] = None,
     constructorStanding: Optional[int] = None,
     offset: Optional[int] = None,
@@ -614,7 +614,7 @@ def constructor_standings(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         constructor (Optional[str], optional): Limit results to a specified constructor
             (e.g. renault). Defaults to None.
@@ -642,7 +642,7 @@ def constructor_standings(
         {f"AND cs.positionText='{constructorStanding}'" if constructorStanding else ""}
         {f"AND c.constructorRef='{constructor}'" if constructor else ""}
         {f"AND r.year='{year}'" if year else ""}
-        {f"AND r.round='{round}'" if round else (f"AND r.round=(SELECT MAX(round) FROM driverStandings ds, races r WHERE ds.raceId=r.raceId AND r.year='{year}')" if year else "AND (r.year, r.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)")}
+        {f"AND r.round='{race}'" if race else (f"AND r.round=(SELECT MAX(round) FROM driverStandings ds, races r WHERE ds.raceId=r.raceId AND r.year='{year}')" if year else "AND (r.year, r.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)")}
         ORDER BY r.year, cs.position
         {f"LIMIT {offset}, {limit}" if offset and limit else ""}
         """
@@ -673,7 +673,7 @@ def constructor_standings(
 def driver_information(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -693,7 +693,7 @@ def driver_information(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -785,7 +785,7 @@ def driver_information(
         f"""
         {query}
         {f"AND ra.year='{year}'" if year else ""}
-        {f"AND ra.round='{round}'" if round else ((f"AND ra.round=(SELECT MAX(round) FROM races WHERE races.year='{year}')" if year else "AND (ra.year, ra.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)") if driverStanding or constructorStanding else "")}
+        {f"AND ra.round='{race}'" if race else ((f"AND ra.round=(SELECT MAX(round) FROM races WHERE races.year='{year}')" if year else "AND (ra.year, ra.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)") if driverStanding or constructorStanding else "")}
         ORDER BY dr.surname
         {f"LIMIT {offset}, {limit}" if offset and limit else ""}
         """
@@ -815,7 +815,7 @@ def driver_information(
 def constructor_information(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -835,7 +835,7 @@ def constructor_information(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -903,7 +903,7 @@ def constructor_information(
         {f"AND constructorStandings.positionText='{constructorStanding}' AND constructorStandings.constructorId=constructors.constructorId AND constructorStandings.raceId=races.raceId" if constructorStanding else ""}
         {"AND driverStandings.constructorId=constructorStandings.constructorId" if constructorStanding and driver else ""}
         {f"AND races.year='{year}'" if year else ""}
-        {f"AND races.round='{round}'" if round else ((f"AND races.round=(SELECT MAX(round) FROM races WHERE races.year='{year}')" if year else "AND (races.year, races.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)") if driverStanding or constructorStanding else "")}
+        {f"AND races.round='{race}'" if race else ((f"AND races.round=(SELECT MAX(round) FROM races WHERE races.year='{year}')" if year else "AND (races.year, races.round) IN (SELECT year, MAX(round) FROM races GROUP BY year)") if driverStanding or constructorStanding else "")}
         ORDER BY constructors.name
         {f"LIMIT {offset}, {limit}" if offset and limit else ""}
         """
@@ -923,7 +923,7 @@ def constructor_information(
 def circuit_information(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -941,7 +941,7 @@ def circuit_information(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -987,7 +987,7 @@ def circuit_information(
         {f"AND re.rank='{fastest}'" if fastest else ""}
         {f"AND re.positionText='{result}'" if result else ""}
         {f"AND ra.year='{year}'" if year else ""}
-        {f"AND ra.round='{round}'" if round else ""}
+        {f"AND ra.round='{race}'" if race else ""}
         ORDER BY ci.circuitRef
         {f"LIMIT {offset}, {limit}" if offset and limit else ""}
         """
@@ -1015,7 +1015,7 @@ def circuit_information(
 def finishing_status(
     *,
     year: Optional[int] = None,
-    round: Optional[int] = None,
+    race: Optional[int] = None,
     circuit: Optional[str] = None,
     constructor: Optional[str] = None,
     driver: Optional[str] = None,
@@ -1031,7 +1031,7 @@ def finishing_status(
 
     Args:
         year (Optional[int], optional): Season calendar year. Defaults to None.
-        round (Optional[int], optional): Race round in the selected calendar year.
+        race (Optional[int], optional): Race round in the selected calendar year.
             Defaults to None.
         circuit (Optional[str], optional): Limit results to a specified circuit
             (e.g. monaco). Defaults to None.
@@ -1061,7 +1061,7 @@ def finishing_status(
         f"""
         SELECT DISTINCT st.statusId, st.status, COUNT(*)
         FROM status st
-        {", races ra" if year or round or circuit else ""}
+        {", races ra" if year or race or circuit else ""}
         , results re
         {", drivers dr" if driver else ""}
         {", constructors co" if constructor else ""}
@@ -1069,7 +1069,7 @@ def finishing_status(
         WHERE TRUE
         {f"AND st.statusId='{status}'" if status else ""}
         AND re.statusId=st.statusId
-        {"AND re.raceId=ra.raceId" if year or round or circuit else ""}
+        {"AND re.raceId=ra.raceId" if year or race or circuit else ""}
         {f"AND re.constructorId=co.constructorId AND co.constructorRef='{constructor}'" if constructor else ""}
         {f"AND re.driverId=dr.driverId AND dr.driverRef='{driver}'" if driver else ""}
         {f"AND ra.circuitId=ci.circuitId AND ci.circuitRef='{circuit}'" if circuit else ""}
@@ -1077,7 +1077,7 @@ def finishing_status(
         {f"AND re.rank='{fastest}'" if fastest else ""}
         {f"AND re.positionText='{result}'" if result else ""}
         {f"AND ra.year='{year}'" if year else ""}
-        {f"AND ra.round='{round}'" if round else ""}
+        {f"AND ra.round='{race}'" if race else ""}
         GROUP BY st.statusId ORDER BY st.statusId
         {f"LIMIT {offset}, {limit}" if offset and limit else ""} 
         """
@@ -1100,7 +1100,7 @@ def finishing_status(
 
 def lap_times(
     year: int,
-    round: int,
+    race: int,
     *,
     lap: Optional[int] = None,
     driver: Optional[str] = None,
@@ -1113,7 +1113,7 @@ def lap_times(
 
     Args:
         year (int): Season calendar year, should be from 1996 onwards.
-        round (int): Race round in the selected calendar year.
+        race (int): Race round in the selected calendar year.
         lap (Optional[int], optional): Limit results to a specific lap. Defaults to None.
         driver (Optional[str], optional): Limit results to a specific driver
             (e.g. alonso). Defaults to None.
@@ -1138,7 +1138,7 @@ def lap_times(
             AND la.driverId=dr.driverId
             AND la.raceId=ra.raceId
             AND ra.year='{year}'
-            AND ra.round='{round}'
+            AND ra.round='{race}'
             {f"AND la.lap='{lap}'" if lap else ""}
             {f"AND dr.driverRef='{driver}'" if driver else ""}
         ORDER BY la.lap, la.position
@@ -1179,7 +1179,7 @@ def lap_times(
 
 def pit_stops(
     year: int,
-    round: int,
+    race: int,
     *,
     pitstop: Optional[int] = None,
     lap: Optional[int] = None,
@@ -1193,7 +1193,7 @@ def pit_stops(
 
     Args:
         year (int): Season calendar year, should be from 2012 onwards.
-        round (int): Race round in the selected calendar year.
+        race (int): Race round in the selected calendar year.
         pitstop (Optional[int], optional): The number of pitstop (e.g. 3 will only
             return the third pitstop for each driver). Defaults to None.
         lap (Optional[int], optional): Limit result to a single specified lap.
@@ -1220,7 +1220,7 @@ def pit_stops(
         WHERE ra.circuitId=ci.circuitId
             AND pi.driverId=dr.driverId
             AND pi.raceId=ra.raceId
-            AND ra.year='{year}' AND ra.round='{round}'
+            AND ra.year='{year}' AND ra.round='{race}'
             {f"AND pi.stop='{pitstop}'" if pitstop else ""}
             {f"AND pi.lap='{lap}'" if lap else ""}
             {f"AND dr.driverRef='{driver}'" if driver else ""}
