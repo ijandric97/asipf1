@@ -257,10 +257,13 @@ def _analyze_no_first(df_gaps: pd.DataFrame, df_no_first: pd.DataFrame) -> None:
     )
     df_no_first.plot.line(
         x="GapToLeaderText",
+        xlabel="Gap between the leader and the last place",
         y="Incidents",
+        ylabel="DNF Incidents",
         color="k",
         ax=ax,
     )
+    ax.legend(["All incidents", "Non first lap incidents"])
     plt.show()
 
 
