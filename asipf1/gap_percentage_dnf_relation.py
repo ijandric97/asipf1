@@ -5,7 +5,11 @@ import textwrap
 import ergast
 import matplotlib.pyplot as plt
 import pandas as pd
-from constants import GAPS_AND_INCIDENTS_CSV, PERCENTAGES_INCIDENTS_CSV
+from constants import (
+    GAPS_AND_INCIDENTS_CSV,
+    GAPS_NO_FIRST_CSV,
+    PERCENTAGES_INCIDENTS_CSV,
+)
 
 # We are looking for the following statueses:
 # 3 - Accident -> Neš se desilo i DNF je ishod, znači najčešće izletio u zid (Senna 94)
@@ -23,9 +27,10 @@ from constants import GAPS_AND_INCIDENTS_CSV, PERCENTAGES_INCIDENTS_CSV
 STATUS_CODES = [3, 4, 20, 104]
 
 
-def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
+def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     gaps_incidents_dict: dict = dict()
     percentages_incidents_dict: dict = dict()
+    gaps_no_first_dict: dict = dict()
 
     max_season = ergast.season_list()["year"].max()
 
@@ -78,6 +83,13 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
                     else 1
                 )
 
+                if lap > 0:
+                    gaps_no_first_dict[time_diff] = (
+                        gaps_no_first_dict[time_diff] + 1
+                        if time_diff in gaps_no_first_dict
+                        else 1
+                    )
+
                 # We also want to see correlation between race and race ending incidents
                 percentages_incidents_dict[round((lap / max_laps) * 100)] = (
                     percentages_incidents_dict[lap] + 1
@@ -91,11 +103,14 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
     # transform to dataframe, rename the columns
     # appropriately, convert milliseconds to human readable time, then export to CSV
     gaps_incidents_dict = dict(sorted(gaps_incidents_dict.items()))
+    gaps_no_first_dict = dict(sorted(gaps_no_first_dict.items()))
     percentages_incidents_dict = dict(sorted(percentages_incidents_dict.items()))
 
     # Convert to pandas series, rename the index to GapToLeader
     gaps_incidents_series = pd.Series(gaps_incidents_dict, name="Incidents")
     gaps_incidents_series.index.name = "GapToLeader"
+    gaps_no_first_series = pd.Series(gaps_no_first_dict, name="Incidents")
+    gaps_no_first_series.index.name = "GapToLeader"
     percentages_incidents_series = pd.Series(
         percentages_incidents_dict, name="Incidents"
     )
@@ -104,6 +119,8 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
     # Convert to pandas dataframe, reset_index to push index column to normal column
     gaps_incidents_frame = gaps_incidents_series.to_frame()
     gaps_incidents_frame = gaps_incidents_frame.reset_index()
+    gaps_no_first_frame = gaps_no_first_series.to_frame()
+    gaps_no_first_frame = gaps_no_first_frame.reset_index()
     percentages_incidents_frame = percentages_incidents_series.to_frame()
     percentages_incidents_frame = percentages_incidents_frame.reset_index()
 
@@ -132,6 +149,25 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
         list(
             range(
                 0,
+                gaps_no_first_frame["GapToLeader"].max() + 1,
+            )
+        ),
+        columns=["GapToLeader"],
+    )
+    gaps_no_first_frame = pd.merge(t, gaps_no_first_frame, how="outer").fillna(
+        value={"Incidents": 0}
+    )
+    gaps_no_first_frame.drop(
+        gaps_no_first_frame.columns[
+            gaps_no_first_frame.columns.str.contains("unnamed", case=False)
+        ],
+        axis=1,
+        inplace=True,
+    )
+    t = pd.DataFrame(
+        list(
+            range(
+                0,
                 100,
             )
         ),
@@ -152,23 +188,31 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame]:
     gaps_incidents_frame["GapToLeaderText"] = gaps_incidents_frame["GapToLeader"].apply(
         lambda x: datetime.datetime.fromtimestamp(x / 1000.0).strftime("%M:%S.%f")[:-3]
     )
+    gaps_no_first_frame["GapToLeaderText"] = gaps_no_first_frame["GapToLeader"].apply(
+        lambda x: datetime.datetime.fromtimestamp(x / 1000.0).strftime("%M:%S.%f")[:-3]
+    )
 
     # export the dataframe to CSV
     gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_CSV)
+    gaps_no_first_frame.to_csv(GAPS_NO_FIRST_CSV)
     percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_CSV)
 
     print("Done generating datasets")
-    return (gaps_incidents_frame, percentages_incidents_frame)
+    return (gaps_incidents_frame, percentages_incidents_frame, gaps_no_first_frame)
 
 
-def _load_from_csv() -> tuple[pd.DataFrame, pd.DataFrame]:
+def _load_from_csv() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Loads the DNF incident correlation data form the already generated CSV files.
 
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]: Tuple containing correlation data for DNFs
         and GapToLeader and DNFs and race completion percentages.
     """
-    return (pd.read_csv(GAPS_AND_INCIDENTS_CSV), pd.read_csv(PERCENTAGES_INCIDENTS_CSV))
+    return (
+        pd.read_csv(GAPS_AND_INCIDENTS_CSV),
+        pd.read_csv(PERCENTAGES_INCIDENTS_CSV),
+        pd.read_csv(GAPS_NO_FIRST_CSV),
+    )
 
 
 def _analyze_gaps(df: pd.DataFrame) -> None:
@@ -186,6 +230,36 @@ def _analyze_gaps(df: pd.DataFrame) -> None:
         y="Incidents",
         ylabel="DNF Incidents",
         use_index=True,
+    )
+    plt.show()
+
+
+def _analyze_no_first(df_gaps: pd.DataFrame, df_no_first: pd.DataFrame) -> None:
+    """Analyzes correlation between DNF incidents and gap to the leader without
+    including the first lap incidents
+
+    Args:
+        df_gaps (pd.DataFrame): DataFrame containing GapToLeader and Incidents
+            correlation
+        df_no_first (pd.DataFrame): DataFrame containing GapToLeader and Incidents
+            correlation without first lap
+    """
+
+    # Display a line plot for gap to leader correlation
+    ax = df_gaps.plot.line(
+        title="Correlation between DNF Incidents and gap to the leader, no first lap",
+        x="GapToLeaderText",
+        xlabel="Gap between the leader and the last place",
+        y="Incidents",
+        ylabel="DNF Incidents",
+        color="r",
+        use_index=True,
+    )
+    df_no_first.plot.line(
+        x="GapToLeaderText",
+        y="Incidents",
+        color="k",
+        ax=ax,
     )
     plt.show()
 
@@ -245,15 +319,17 @@ def analyze(force_generate_dataset: bool = False) -> None:
     if (
         (not os.path.exists(GAPS_AND_INCIDENTS_CSV))
         or (not os.path.exists(PERCENTAGES_INCIDENTS_CSV))
+        or (not os.path.exists(GAPS_NO_FIRST_CSV))
         or force_generate_dataset
     ):
-        df_gaps, df_percentages = generate_dataset()
+        df_gaps, df_percentages, df_no_first = generate_dataset()
     else:
         # Load the data
-        df_gaps, df_percentages = _load_from_csv()
+        df_gaps, df_percentages, df_no_first = _load_from_csv()
 
     _analyze_gaps(df_gaps)
     _analyze_percentages(df_percentages)
+    _analyze_no_first(df_gaps, df_no_first)
 
 
 if __name__ == "__main__":
