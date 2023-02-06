@@ -6,33 +6,29 @@ import ergast
 import matplotlib.pyplot as plt
 import pandas as pd
 from constants import (
+    GAPS_AND_INCIDENTS_COLLISIONS_CSV,
     GAPS_AND_INCIDENTS_CSV,
+    GAPS_NO_FIRST_COLLISIONS_CSV,
     GAPS_NO_FIRST_CSV,
+    IMAGES_DPI,
+    IMAGES_FOLDER,
+    IMAGES_SIZE,
+    PERCENTAGES_INCIDENTS_COLLISIONS_CSV,
     PERCENTAGES_INCIDENTS_CSV,
+    STATUS_CODES,
+    STATUS_CODES_COLLISIONS,
 )
 
-# We are looking for the following statueses:
-# 3 - Accident -> Neš se desilo i DNF je ishod, znači najčešće izletio u zid (Senna 94)
-# 4 - Collision -> 2 or more cars crashed into each other
-# 20 - Spun off -> Car got stuck in the gravel and DNF
-#
-# We can ignore these statuses for now:
-# 104 - Fatal accident -> Death has to be pronunced at the spot not in the hospital
-#                      -> Therefore Bianchi for example does not count
-#                      -> No such cases between 96-22
-# 130 - Collision Damage -> When driver collided with another driver but managed to
-#                           continue running for additional lap(s) until the car gave up
-# 138 - Debris -> Only 1 such case, which is Russell 2020 when he got hit by a loose
-#                 wheel from another car
-STATUS_CODES = [3, 4, 20, 104]
 
-
-def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def generate_dataset(
+    collisions: bool = False,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     gaps_incidents_dict: dict = dict()
     percentages_incidents_dict: dict = dict()
     gaps_no_first_dict: dict = dict()
 
     max_season = ergast.season_list()["year"].max()
+    status_codes = STATUS_CODES_COLLISIONS if collisions else STATUS_CODES
 
     print(f"Generating data from 1996 till {max_season}")
     # Lap Time data is available from 96
@@ -58,7 +54,7 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
             # Get incident laps
             incident_laps = (
                 ergast.race_results(year=year, race=race)
-                .query(f"statusId in {STATUS_CODES}")
+                .query(f"statusId in {status_codes}")
                 .sort_values(by=["laps"])
                 .reset_index(drop=True)
             )["laps"].to_list()
@@ -193,48 +189,70 @@ def generate_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     )
 
     # export the dataframe to CSV
-    gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_CSV)
-    gaps_no_first_frame.to_csv(GAPS_NO_FIRST_CSV)
-    percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_CSV)
+    if collisions:
+        gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_COLLISIONS_CSV)
+        gaps_no_first_frame.to_csv(GAPS_NO_FIRST_COLLISIONS_CSV)
+        percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_COLLISIONS_CSV)
+    else:
+        gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_CSV)
+        gaps_no_first_frame.to_csv(GAPS_NO_FIRST_CSV)
+        percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_CSV)
 
     print("Done generating datasets")
     return (gaps_incidents_frame, percentages_incidents_frame, gaps_no_first_frame)
 
 
-def _load_from_csv() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def _load_from_csv(
+    collisions: bool = False,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Loads the DNF incident correlation data form the already generated CSV files.
 
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]: Tuple containing correlation data for DNFs
         and GapToLeader and DNFs and race completion percentages.
     """
-    return (
-        pd.read_csv(GAPS_AND_INCIDENTS_CSV),
-        pd.read_csv(PERCENTAGES_INCIDENTS_CSV),
-        pd.read_csv(GAPS_NO_FIRST_CSV),
-    )
+    if collisions:
+        return (
+            pd.read_csv(GAPS_AND_INCIDENTS_COLLISIONS_CSV),
+            pd.read_csv(PERCENTAGES_INCIDENTS_COLLISIONS_CSV),
+            pd.read_csv(GAPS_NO_FIRST_COLLISIONS_CSV),
+        )
+    else:
+        return (
+            pd.read_csv(GAPS_AND_INCIDENTS_CSV),
+            pd.read_csv(PERCENTAGES_INCIDENTS_CSV),
+            pd.read_csv(GAPS_NO_FIRST_CSV),
+        )
 
 
-def _analyze_gaps(df: pd.DataFrame) -> None:
+def _analyze_gaps(df: pd.DataFrame, collisions: bool = False) -> None:
     """Analyzes correlation between DNF incidents and gap to the leader
 
     Args:
         df (pd.DataFrame): DataFrame containing GapToLeader and Incidents correlation
     """
 
+    dnf_type = "Collisions/Incidents" if collisions else "Incidents"
+
     # Display a line plot for gap to leader correlation
-    df.plot.line(
-        title="Correlation between DNF Incidents and gap to the leader",
+    ax = df.plot.line(
+        title=f"Correlation between DNF {dnf_type} and gap to the leader",
         x="GapToLeaderText",
         xlabel="Gap between the leader and the last place",
         y="Incidents",
-        ylabel="DNF Incidents",
+        ylabel=f"DNF {dnf_type}",
         use_index=True,
+        figsize=IMAGES_SIZE,
     )
-    plt.show()
+    ax.legend([f"{dnf_type}"])
+    plt.savefig(
+        f"{IMAGES_FOLDER}/gaps{'_collisions' if collisions else ''}.png", dpi=IMAGES_DPI
+    )
 
 
-def _analyze_no_first(df_gaps: pd.DataFrame, df_no_first: pd.DataFrame) -> None:
+def _analyze_no_first(
+    df_gaps: pd.DataFrame, df_no_first: pd.DataFrame, collisions: bool = False
+) -> None:
     """Analyzes correlation between DNF incidents and gap to the leader without
     including the first lap incidents
 
@@ -245,34 +263,43 @@ def _analyze_no_first(df_gaps: pd.DataFrame, df_no_first: pd.DataFrame) -> None:
             correlation without first lap
     """
 
+    dnf_type = "Collisions/Incidents" if collisions else "Incidents"
+
     # Display a line plot for gap to leader correlation
     ax = df_gaps.plot.line(
-        title="Correlation between DNF Incidents and gap to the leader, no first lap",
+        title=f"Correlation between DNF {dnf_type} and gap to the leader, no first lap",
         x="GapToLeaderText",
         xlabel="Gap between the leader and the last place",
         y="Incidents",
-        ylabel="DNF Incidents",
+        ylabel=f"DNF {dnf_type}",
         color="r",
         use_index=True,
+        figsize=IMAGES_SIZE,
     )
     df_no_first.plot.line(
         x="GapToLeaderText",
         xlabel="Gap between the leader and the last place",
         y="Incidents",
-        ylabel="DNF Incidents",
+        ylabel=f"DNF {dnf_type}",
         color="k",
+        figsize=IMAGES_SIZE,
         ax=ax,
     )
-    ax.legend(["All incidents", "Non first lap incidents"])
-    plt.show()
+    ax.legend([f"All {dnf_type}", f"Non first lap {dnf_type}"])
+    plt.savefig(
+        f"{IMAGES_FOLDER}/no_first{'_collisions' if collisions else ''}.png",
+        dpi=IMAGES_DPI,
+    )
 
 
-def _analyze_percentages(df: pd.DataFrame) -> None:
+def _analyze_percentages(df: pd.DataFrame, collisions: bool = False) -> None:
     """Analyzes correlation between DNF Incidents and completion percentage.
 
     Args:
         df (pd.DataFrame): DataFrame containing incidents and completion percentages.
     """
+
+    dnf_type = "Collisions/Incidents" if collisions else "Incidents"
 
     # Display a line plot for percentage completed correlation
     incidents = df["Incidents"].sum()
@@ -280,20 +307,22 @@ def _analyze_percentages(df: pd.DataFrame) -> None:
     incidents_rest = incidents - incidents_firstlap
     incidents_text = textwrap.dedent(
         f"""
-            There were {incidents} incidents.
+            There were {incidents} {dnf_type}.
             {incidents_firstlap} occured on the first lap.
             {incidents_rest} occured on the remainder of laps.
             """
     )
 
     ax = df.plot.line(
-        title="Correlation between DNF Incidents and completion percentage",
+        title=f"Correlation between DNF {dnf_type} and completion percentage",
         x="Percentage",
         xlabel="Percentage of the race completed",
         y="Incidents",
-        ylabel="DNF Incidents",
+        ylabel=f"DNF {dnf_type}",
         use_index=True,
+        figsize=IMAGES_SIZE,
     )
+    ax.legend([f"{dnf_type}"])
     plt.text(
         0.5,
         0.99,
@@ -303,10 +332,13 @@ def _analyze_percentages(df: pd.DataFrame) -> None:
         transform=ax.transAxes,
     )
     print(incidents_text)
-    plt.show()
+    plt.savefig(
+        f"{IMAGES_FOLDER}/percentages{'_collisions' if collisions else ''}.png",
+        dpi=IMAGES_DPI,
+    )
 
 
-def analyze(force_generate_dataset: bool = False) -> None:
+def analyze(collisions: bool = False, force_generate_dataset: bool = False) -> None:
     """
     Runs a corelation analysis between non-mechanical DNFs (i.e. race ending crashes
     or collisions) and total gap to leader (i.e. time difference between the leader and
@@ -317,23 +349,40 @@ def analyze(force_generate_dataset: bool = False) -> None:
         a CSV file if it already exists. Setting this to True always forces creation of
         the CSV file. Defaults to False.
     """
+    if not os.path.exists(IMAGES_FOLDER):
+        os.makedirs(IMAGES_FOLDER)
 
-    # Generate Data if no CSV or force flag is set
-    if (
-        (not os.path.exists(GAPS_AND_INCIDENTS_CSV))
-        or (not os.path.exists(PERCENTAGES_INCIDENTS_CSV))
-        or (not os.path.exists(GAPS_NO_FIRST_CSV))
-        or force_generate_dataset
-    ):
-        df_gaps, df_percentages, df_no_first = generate_dataset()
+    if collisions:
+        print("Collisions included")
+        # Generate Data if no CSV or force flag is set
+        if (
+            (not os.path.exists(GAPS_AND_INCIDENTS_COLLISIONS_CSV))
+            or (not os.path.exists(PERCENTAGES_INCIDENTS_COLLISIONS_CSV))
+            or (not os.path.exists(GAPS_NO_FIRST_COLLISIONS_CSV))
+            or force_generate_dataset
+        ):
+            df_gaps, df_percentages, df_no_first = generate_dataset(collisions)
+        else:
+            # Load the data
+            df_gaps, df_percentages, df_no_first = _load_from_csv(collisions)
     else:
-        # Load the data
-        df_gaps, df_percentages, df_no_first = _load_from_csv()
+        # Generate Data if no CSV or force flag is set
+        if (
+            (not os.path.exists(GAPS_AND_INCIDENTS_CSV))
+            or (not os.path.exists(PERCENTAGES_INCIDENTS_CSV))
+            or (not os.path.exists(GAPS_NO_FIRST_CSV))
+            or force_generate_dataset
+        ):
+            df_gaps, df_percentages, df_no_first = generate_dataset()
+        else:
+            # Load the data
+            df_gaps, df_percentages, df_no_first = _load_from_csv()
 
-    _analyze_gaps(df_gaps)
-    _analyze_percentages(df_percentages)
-    _analyze_no_first(df_gaps, df_no_first)
+    _analyze_gaps(df_gaps, collisions)
+    _analyze_percentages(df_percentages, collisions)
+    _analyze_no_first(df_gaps, df_no_first, collisions)
 
 
 if __name__ == "__main__":
     analyze()
+    analyze(True)

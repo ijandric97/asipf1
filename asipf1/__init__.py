@@ -1,3 +1,4 @@
 import gap_percentage_dnf_relation
 
 gap_percentage_dnf_relation.analyze()
+gap_percentage_dnf_relation.analyze(True)

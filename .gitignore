@@ -1,3 +1,7 @@
+# Generated data
+data/**/*.csv
+images
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
