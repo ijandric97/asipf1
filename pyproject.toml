@@ -9,6 +9,8 @@ packages = [{ include = "asip_f1" }]
 [tool.poetry.dependencies]
 python = "^3.10"
 fastf1 = "^2.3.0"
+seaborn = "^0.12.2"
+plotly = "^5.13.0"
 
 
 [tool.poetry.group.dev.dependencies]

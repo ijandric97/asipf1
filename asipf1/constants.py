@@ -8,7 +8,10 @@ PERCENTAGES_INCIDENTS_COLLISIONS_CSV = (
     DATA_FOLDER + "/percentages_and_incidents_collisions.csv"
 )
 
+PITSTOPS_CSV = DATA_FOLDER + "./pitstops.csv"
+
 IMAGES_FOLDER = "images"
+IMAGES_PITSTOPS_FOLDER = IMAGES_FOLDER + "/pitstops"
 IMAGES_DPI = 100
 IMAGES_SIZE = (16, 10)
 

@@ -1,6 +1,8 @@
 # Generated data
 data/**/*.csv
 images
+# Allowed data
+!data/f1db.sqlite
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

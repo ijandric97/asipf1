@@ -1215,7 +1215,7 @@ def pit_stops(
             ra.year, ra.round, ra.name, ra.date, ra.time, ra.url, 
             ci.circuitRef, ci.name, ci.location, ci.country, ci.url, ci.lat, ci.lng, ci.alt,
             dr.driverRef,
-            pi.stop, pi.lap, pi.time, pi.duration
+            pi.stop, pi.lap, pi.time, pi.duration, pi.milliseconds
         FROM pitStops pi, races ra, circuits ci, drivers dr
         WHERE ra.circuitId=ci.circuitId
             AND pi.driverId=dr.driverId
@@ -1255,6 +1255,7 @@ def pit_stops(
             "lap",
             "localTime",  # TODO: I dont like this tbh
             "pitstopDuration",
+            "durationMilliseconds",
         ],
     )
     return df
