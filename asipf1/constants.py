@@ -1,3 +1,7 @@
+from typing import Optional, TypedDict
+
+import pandas as pd
+
 DATA_FOLDER = "data"
 GAPS_AND_INCIDENTS_CSV = DATA_FOLDER + "/gaps_and_incidents.csv"
 GAPS_AND_INCIDENTS_COLLISIONS_CSV = DATA_FOLDER + "/gaps_and_incidents_collisions.csv"
@@ -13,7 +17,7 @@ PITSTOPS_CSV = DATA_FOLDER + "./pitstops.csv"
 IMAGES_FOLDER = "images"
 IMAGES_PITSTOPS_FOLDER = IMAGES_FOLDER + "/pitstops"
 IMAGES_DPI = 100
-IMAGES_SIZE = (16, 10)
+IMAGES_SIZE = (16, 20)
 
 FASTF1_CACHE_FOLDER = ".cache"
 
@@ -32,3 +36,14 @@ FASTF1_CACHE_FOLDER = ".cache"
 #                 wheel from another car
 STATUS_CODES = [3, 20, 104]
 STATUS_CODES_COLLISIONS = [3, 4, 20, 104]
+
+
+class PlotData(TypedDict):
+    x: pd.Series
+    y: pd.Series
+    title: str
+    xlabel: str
+    ylabel: str
+    color: str
+    show_mean: Optional[bool]
+    text: Optional[str]

@@ -190,13 +190,15 @@ def generate_dataset(
 
     # export the dataframe to CSV
     if collisions:
-        gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_COLLISIONS_CSV)
-        gaps_no_first_frame.to_csv(GAPS_NO_FIRST_COLLISIONS_CSV)
-        percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_COLLISIONS_CSV)
+        gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_COLLISIONS_CSV, index=False)
+        gaps_no_first_frame.to_csv(GAPS_NO_FIRST_COLLISIONS_CSV, index=False)
+        percentages_incidents_frame.to_csv(
+            PERCENTAGES_INCIDENTS_COLLISIONS_CSV, index=False
+        )
     else:
-        gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_CSV)
-        gaps_no_first_frame.to_csv(GAPS_NO_FIRST_CSV)
-        percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_CSV)
+        gaps_incidents_frame.to_csv(GAPS_AND_INCIDENTS_CSV, index=False)
+        gaps_no_first_frame.to_csv(GAPS_NO_FIRST_CSV, index=False)
+        percentages_incidents_frame.to_csv(PERCENTAGES_INCIDENTS_CSV, index=False)
 
     print("Done generating datasets")
     return (gaps_incidents_frame, percentages_incidents_frame, gaps_no_first_frame)

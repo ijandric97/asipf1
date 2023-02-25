@@ -1,4 +1,6 @@
+import math
 import os
+import textwrap
 import warnings
 
 import ergast
@@ -7,16 +9,19 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from constants import IMAGES_DPI, IMAGES_PITSTOPS_FOLDER, IMAGES_SIZE, PITSTOPS_CSV
-from utils import get_local_minimum
+from utils import get_local_minimum, plot_multiple_by_time
 
-sns.set_theme(style="whitegrid")
+sns.set_theme()
+sns.set_style("white", {"axes.grid": True})
 
 
 def generate_dataset() -> pd.DataFrame:
     results = pd.DataFrame([])
 
     max_season = ergast.season_list()["year"].max()
-    # Lap Time data is available from 96
+
+    print(f"Generating pitstop data from 1994 till {max_season}")
+    # Pitstop data is available from 1994
     for year in range(1994, max_season + 1):
         print(f"Parsing year {year}:")
         # Get number of races in a given season
@@ -25,9 +30,9 @@ def generate_dataset() -> pd.DataFrame:
         for race in range(1, race_count + 1):  # Rounds are 1-index based
             results = pd.concat([results, get_pitstop_data(year, race)])
 
-    results.reset_index(inplace=True, drop=True)
-    results.to_csv(PITSTOPS_CSV)
-    print(results)
+    results.reset_index(inplace=True, drop=True)  # Concat messed up index, so reset it
+    results.to_csv(PITSTOPS_CSV, index=False)
+
     return results
 
 
@@ -44,37 +49,39 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
             "fastestLapTime",
         ]
     ]
-    stops = ergast.pit_stops(year, race, pitstop=1)[
+    if results.empty:
+        print(f"SKIPPING ({year}:{race}) -> No race results")
+        return  # Exit because no results are available
+
+    stops = ergast.pit_stops(year, race)[
         [
             "year",
             "time",
             "circuitId",
             "driverId",
+            "pitstop",
             "lap",
             "localTime",
             "pitstopDuration",
             "durationMilliseconds",
         ]
     ]
-    if results.empty or stops.empty:
-        print(f"SKIPPING {year} - {race} {len(results)} {len(stops)}")
+    if stops.empty:
+        print(f"SKIPPING ({year}:{race}) -> No pitstop data")
         return  # Exit because no results are available
 
-    results["fastestLap"] = (
-        pd.to_datetime(results["fastestLapTime"], format="%M:%S.%f")
-        + pd.DateOffset(years=70)
-    ).astype(np.int64) // int(1e6)
-
-    # Merge results and stops
+    # Merge results and stops and delete stops
     results = results.merge(stops, on=["circuitId", "driverId", "year"])
     del stops  # Optimization
 
-    # FIXME: Time is calculated from UTC, while localTime is not, in short we got no
-    # local startTime
-    # results["firstStopTime"] = (
-    #     pd.to_datetime(results["localTime"], format="%H:%M:%S")
-    #     - pd.to_datetime(results["time"], format="%H:%M:%S")
-    # ).astype(np.int64) / int(1e6)
+    # Get average number of pitstops and then only keep the first pitstops
+    average_number_of_pistops = math.ceil(results["pitstop"].mean())
+    results = results[results["pitstop"] == 1]
+
+    results["fastestLap"] = pd.to_datetime(
+        results["fastestLapTime"], format="%M:%S.%f"
+    ) + pd.DateOffset(years=70)
+    results["fastestLap"] = results["fastestLap"].astype(np.int64) // int(1e6)
 
     # Cilj nam je dobit sljedece ig?
     # year, circuitId, optimalFirstStopLap
@@ -113,52 +120,39 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
         {
             "year": [year],
             "circuitId": [circuit_id],
-            "optimalFirstStopLap": [min_x],
-            "lap": [actual_x],
-            "avgDuration": [avg_duration],
-            "avgLapTime": [avg_lap],
+            "optimalFirstPitstopLap": [min_x],
+            "actualFirstPitstopLap": [actual_x],
+            "averagePitstopDuration": [avg_duration],
+            "averageLapTime": [avg_lap],
+            "averageNumberOfPitstops": [average_number_of_pistops],
         }
     )
 
 
-# grouped = df.groupby(["circuitId"])
-# for name, group in grouped:
-#     print(name)
-#     print(group)
-
-#     fig, ax = plt.subplots(figsize=IMAGES_SIZE)
-#     plt.title(f"{name}")
-#     # ax.plot(group["year"], group["optimalFirstStopLap"], "-o")
-#     # ax.axhline(group["optimalFirstStopLap"].mean(), color="r", linestyle="--")
-#     # ax.plot(group["year"], group["lap"], "-o")
-#     # ax.axhline(group["lap"].mean(), color="g", linestyle="--")
-#     ax.plot(group["year"], group["avgDuration"], "-o")
-#     plt.savefig(f"{IMAGES_PITSTOPS_FOLDER}/{name}.png", dpi=IMAGES_DPI)
+def _analyze_per_track(df: pd.DataFrame) -> None:
+    grouped = df.groupby(["circuitId"])
+    for name, group in grouped:
+        print(name)
+        plot_multiple_by_time(group, IMAGES_PITSTOPS_FOLDER + f"./{name}.png")
 
 
-def _analyze_duration(df: pd.DataFrame) -> None:
+def _analyze_averages(df: pd.DataFrame) -> None:
     grouped = df.groupby(["year"])
     res = pd.DataFrame()
     for name, group in grouped:
         item = pd.DataFrame(
             {
                 "year": [name],
-                "optimal": group["optimalFirstStopLap"].mean(),
-                "avg": group["lap"].mean(),
-                "avgDuration": group["avgDuration"].mean(),
+                "optimalFirstPitstopLap": group["optimalFirstPitstopLap"].mean(),
+                "actualFirstPitstopLap": group["actualFirstPitstopLap"].mean(),
+                "averagePitstopDuration": group["averagePitstopDuration"].mean(),
+                "averageNumberOfPitstops": group["averageNumberOfPitstops"].mean(),
             }
         )
         res = pd.concat([res, item])
     res.reset_index(inplace=True, drop=True)
 
-    fig, ax = plt.subplots()
-    plt.title("Average first pitstop duration")
-    ax.plot(res["year"], res["avgDuration"], "-o")
-    # ax.plot(res["year"], res["optimal"], "-o")
-    # ax.axhline(res["optimal"].mean(), color="r", linestyle="--")
-    # ax.plot(res["year"], res["avg"], "-o")
-    # ax.axhline(res["avg"].mean(), color="g", linestyle="--")
-    plt.show()
+    plot_multiple_by_time(res, IMAGES_PITSTOPS_FOLDER + "./_pitsop_averages.png")
 
 
 def analyze(force_generate_dataset: bool = False) -> None:
@@ -171,7 +165,8 @@ def analyze(force_generate_dataset: bool = False) -> None:
     else:
         df = pd.read_csv(PITSTOPS_CSV)
 
-    _analyze_duration(df)
+    _analyze_averages(df)
+    _analyze_per_track(df)
 
 
 if __name__ == "__main__":
