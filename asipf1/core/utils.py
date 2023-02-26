@@ -1,10 +1,9 @@
-import textwrap
 from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from constants import IMAGES_DPI, IMAGES_SIZE, PlotData
+from core.constants import IMAGES_DPI, IMAGES_PITSTOPS_SIZE, PlotData
 
 
 def get_local_minimum(c: np.poly1d) -> tuple[np.ndarray, np.ndarray]:
@@ -63,7 +62,7 @@ def plot_regression(
 def plot_multiple(
     plots: list[PlotData],
     filename: str,
-    figsize: tuple[int, int] = IMAGES_SIZE,
+    figsize: tuple[int, int] = IMAGES_PITSTOPS_SIZE,
     dpi: int = IMAGES_DPI,
 ) -> None:
     fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -103,34 +102,17 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
     avg_duration_txt = ""
     avg_count_txt = ""
 
-    optimal_txt = textwrap.dedent(
-        f"""
-        Actual and optimal correlation: {
-            abs(res['actualFirstPitstopLap'].corr(res['optimalFirstPitstopLap'])):.2f}
-        """
+    optimal_txt = (
+        "Actual and optimal correlation: "
+        + f"{abs(res['actualFirstPitstopLap'].corr(res['optimalFirstPitstopLap'])):.2f}"
     )
-
-    if res["year"].min() < 2010 and res["year"].max() >= 2010:
-        avg_duration_txt = textwrap.dedent(
-            f"""
-            Refuelling average: {
-                round(res[res['year'] < 2010]["averagePitstopDuration"].mean())} ms
-            No reffuelling average: {
-                round(res[res['year'] >= 2010]["averagePitstopDuration"].mean())} ms
-            """
-        )
-        avg_count_txt = textwrap.dedent(
-            f"""
-            Refuelling average: {
-                res[res['year'] < 2010]["averageNumberOfPitstops"].mean():.2f}
-            No reffuelling average: {
-                res[res['year'] >= 2010]["averageNumberOfPitstops"].mean():.2f}
-            """
-        )
+    avg_duration_txt = f"Average: {round(res['averagePitstopDuration'].mean())} ms"
+    avg_count_txt = f"Average: {res['averageNumberOfPitstops'].mean():.2f}"
 
     colors = []
-    for _, row in res.iterrows():
-        colors.append("r" if row["hadDNFBefore"] else "k")
+    if "hadDNFBefore" in res:
+        for _, row in res.iterrows():
+            colors.append("r" if row["hadDNFBefore"] else "k")
 
     plot_multiple(
         [

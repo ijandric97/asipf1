@@ -3,13 +3,12 @@ import os
 import warnings
 
 import ergast
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from core.constants import IMAGES_PITSTOPS_FOLDER, PITSTOPS_CSV
 from core.utils import get_local_minimum, plot_multiple_by_time
-
-sns.set_style("white", {"axes.grid": True})
 
 
 def generate_dataset() -> pd.DataFrame:
@@ -17,8 +16,8 @@ def generate_dataset() -> pd.DataFrame:
 
     max_season = ergast.season_list()["year"].max()
 
-    print(f"Generating pitstop data from 1994 till {max_season}")
-    # Pitstop data is available from 1994
+    print(f"Generating pitstop data from 2012 till {max_season}")
+    # Pitstop data is available from 2012
     for year in range(2012, max_season + 1):
         print(f"Parsing year {year}:")
         # Get number of races in a given season
@@ -112,12 +111,6 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
             if local_minimum > 1 and local_minimum < total_laps:
                 min_x = local_minimum
 
-        # if len(w) > 0:
-        #     print(results)
-        #     plot_regression(
-        #         x, y, regression_model, min_x, f"{year} - {race} - {circuit_id}"
-        #     )
-
     return pd.DataFrame(
         {
             "year": [year],
@@ -135,7 +128,6 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
 def _analyze_per_track(df: pd.DataFrame) -> None:
     grouped = df.groupby(["circuitId"])
     for name, group in grouped:
-        print(name)
         plot_multiple_by_time(group, IMAGES_PITSTOPS_FOLDER + f"./{name}.png")
 
 
@@ -157,6 +149,9 @@ def _analyze_averages(df: pd.DataFrame) -> None:
 
     plot_multiple_by_time(res, IMAGES_PITSTOPS_FOLDER + "./_pitstop_averages.png")
 
+    sns.boxplot(x=df["year"], y=df["averagePitstopDuration"])
+    plt.show()
+
 
 def analyze(force_generate_dataset: bool = False) -> None:
     if not os.path.exists(IMAGES_PITSTOPS_FOLDER):
@@ -168,9 +163,9 @@ def analyze(force_generate_dataset: bool = False) -> None:
     else:
         df = pd.read_csv(PITSTOPS_CSV)
 
-    # _analyze_averages(df)
+    _analyze_averages(df)
     _analyze_per_track(df)
 
 
 if __name__ == "__main__":
-    analyze(True)
+    analyze()
