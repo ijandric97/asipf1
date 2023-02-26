@@ -4,7 +4,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from constants import IMAGES_DPI, IMAGES_PITSTOPS_FOLDER, IMAGES_SIZE, PlotData
+from constants import IMAGES_DPI, IMAGES_SIZE, PlotData
 
 
 def get_local_minimum(c: np.poly1d) -> tuple[np.ndarray, np.ndarray]:
@@ -69,10 +69,19 @@ def plot_multiple(
     fig = plt.figure(figsize=figsize, dpi=dpi)
     for i, data in enumerate(plots):
         ax = fig.add_subplot(len(plots), 1, i + 1)
-        ax.plot(data["x"], data["y"], "-o", color=data["color"])
+
+        if "colors" in data:
+            ax.plot(data["x"], data["y"], color=data["color"], zorder=1)
+            ax.scatter(
+                data["x"], data["y"], label="warning", color=data["colors"], zorder=2
+            )
+        else:
+            ax.plot(data["x"], data["y"], "-o", color=data["color"])
+
         plt.title(data["title"])
         plt.xlabel(data["xlabel"])
         plt.ylabel(data["ylabel"])
+
         if "show_mean" in data:
             plt.axhline(data["y"].mean(), color=data["color"], linestyle="--")
         if "text" in data:
@@ -94,6 +103,13 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
     avg_duration_txt = ""
     avg_count_txt = ""
 
+    optimal_txt = textwrap.dedent(
+        f"""
+        Actual and optimal correlation: {
+            abs(res['actualFirstPitstopLap'].corr(res['optimalFirstPitstopLap'])):.2f}
+        """
+    )
+
     if res["year"].min() < 2010 and res["year"].max() >= 2010:
         avg_duration_txt = textwrap.dedent(
             f"""
@@ -112,8 +128,22 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
             """
         )
 
+    colors = []
+    for _, row in res.iterrows():
+        colors.append("r" if row["hadDNFBefore"] else "k")
+
     plot_multiple(
         [
+            {
+                "x": res["year"],
+                "y": res["actualFirstPitstopLap"],
+                "title": "Actual first pit stop lap",
+                "xlabel": "Year",
+                "ylabel": "Lap",
+                "color": "k",
+                "show_mean": True,
+                "colors": colors,
+            },
             {
                 "x": res["year"],
                 "y": res["optimalFirstPitstopLap"],
@@ -122,15 +152,7 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
                 "ylabel": "Lap",
                 "color": "g",
                 "show_mean": True,
-            },
-            {
-                "x": res["year"],
-                "y": res["actualFirstPitstopLap"],
-                "title": "Actual first pit stop lap",
-                "xlabel": "Year",
-                "ylabel": "Lap",
-                "color": "r",
-                "show_mean": True,
+                "text": optimal_txt,
             },
             {
                 "x": res["year"],

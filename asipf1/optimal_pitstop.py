@@ -1,17 +1,14 @@
 import math
 import os
-import textwrap
 import warnings
 
 import ergast
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from constants import IMAGES_DPI, IMAGES_PITSTOPS_FOLDER, IMAGES_SIZE, PITSTOPS_CSV
-from utils import get_local_minimum, plot_multiple_by_time
+from core.constants import IMAGES_PITSTOPS_FOLDER, PITSTOPS_CSV
+from core.utils import get_local_minimum, plot_multiple_by_time
 
-sns.set_theme()
 sns.set_style("white", {"axes.grid": True})
 
 
@@ -22,7 +19,7 @@ def generate_dataset() -> pd.DataFrame:
 
     print(f"Generating pitstop data from 1994 till {max_season}")
     # Pitstop data is available from 1994
-    for year in range(1994, max_season + 1):
+    for year in range(2012, max_season + 1):
         print(f"Parsing year {year}:")
         # Get number of races in a given season
         race_count = len(ergast.race_schedule(year=year).index)
@@ -38,7 +35,7 @@ def generate_dataset() -> pd.DataFrame:
 
 def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
     # Get race results for lets say first round 2022
-    results = ergast.race_results(year=year, race=race).dropna(subset=["timeMillis"])[
+    results = ergast.race_results(year=year, race=race)[
         [
             "year",
             "circuitId",
@@ -46,9 +43,12 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
             "timeMillis",
             "laps",
             "position",
+            "positionText",
             "fastestLapTime",
         ]
     ]
+    dnfs = results[results["positionText"] == "R"]  # Get all crashes
+    results = results.dropna(subset=["timeMillis"])  # Now drop non-eligible ones
     if results.empty:
         print(f"SKIPPING ({year}:{race}) -> No race results")
         return  # Exit because no results are available
@@ -90,6 +90,8 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
     circuit_id = results["circuitId"].iat[0]
     actual_x = results.loc[results["avgLapTime"].idxmin()]["lap"]
 
+    had_dnf = len(dnfs.query(f"laps >= {actual_x - 2} and laps <= {actual_x}")) > 0
+
     x = results["lap"]
     y = results["avgLapTime"]
 
@@ -125,6 +127,7 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
             "averagePitstopDuration": [avg_duration],
             "averageLapTime": [avg_lap],
             "averageNumberOfPitstops": [average_number_of_pistops],
+            "hadDNFBefore": [had_dnf],
         }
     )
 
@@ -152,7 +155,7 @@ def _analyze_averages(df: pd.DataFrame) -> None:
         res = pd.concat([res, item])
     res.reset_index(inplace=True, drop=True)
 
-    plot_multiple_by_time(res, IMAGES_PITSTOPS_FOLDER + "./_pitsop_averages.png")
+    plot_multiple_by_time(res, IMAGES_PITSTOPS_FOLDER + "./_pitstop_averages.png")
 
 
 def analyze(force_generate_dataset: bool = False) -> None:
@@ -165,9 +168,9 @@ def analyze(force_generate_dataset: bool = False) -> None:
     else:
         df = pd.read_csv(PITSTOPS_CSV)
 
-    _analyze_averages(df)
+    # _analyze_averages(df)
     _analyze_per_track(df)
 
 
 if __name__ == "__main__":
-    analyze()
+    analyze(True)

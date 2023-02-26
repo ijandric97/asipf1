@@ -5,7 +5,7 @@ import textwrap
 import ergast
 import matplotlib.pyplot as plt
 import pandas as pd
-from constants import (
+from core.constants import (
     GAPS_AND_INCIDENTS_COLLISIONS_CSV,
     GAPS_AND_INCIDENTS_CSV,
     GAPS_NO_FIRST_COLLISIONS_CSV,
