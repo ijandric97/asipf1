@@ -3,7 +3,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from core.constants import IMAGES_DPI, IMAGES_PITSTOPS_SIZE, PlotData
+from core.constants import IMAGES_DPI, IMAGES_PITSTOPS_SIZE
 
 
 def get_local_minimum(c: np.poly1d) -> tuple[np.ndarray, np.ndarray]:
@@ -59,45 +59,6 @@ def plot_regression(
     plt.show()
 
 
-def plot_multiple(
-    plots: list[PlotData],
-    filename: str,
-    figsize: tuple[int, int] = IMAGES_PITSTOPS_SIZE,
-    dpi: int = IMAGES_DPI,
-) -> None:
-    fig = plt.figure(figsize=figsize, dpi=dpi)
-    for i, data in enumerate(plots):
-        ax = fig.add_subplot(len(plots), 1, i + 1)
-
-        if "colors" in data:
-            ax.plot(data["x"], data["y"], color=data["color"], zorder=1)
-            ax.scatter(
-                data["x"], data["y"], label="warning", color=data["colors"], zorder=2
-            )
-        else:
-            ax.plot(data["x"], data["y"], "-o", color=data["color"])
-
-        plt.title(data["title"])
-        plt.xlabel(data["xlabel"])
-        plt.ylabel(data["ylabel"])
-
-        if "show_mean" in data:
-            plt.axhline(data["y"].mean(), color=data["color"], linestyle="--")
-        if "text" in data:
-            plt.text(
-                0.5,
-                0.99,
-                data["text"],
-                ha="center",
-                va="top",
-                transform=ax.transAxes,
-            )
-
-    fig.tight_layout()
-    plt.savefig(filename)
-    plt.close()
-
-
 def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
     avg_duration_txt = ""
     avg_count_txt = ""
@@ -114,46 +75,76 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
         for _, row in res.iterrows():
             colors.append("r" if row["hadDNFBefore"] else "k")
 
-    plot_multiple(
-        [
-            {
-                "x": res["year"],
-                "y": res["actualFirstPitstopLap"],
-                "title": "Actual first pit stop lap",
-                "xlabel": "Year",
-                "ylabel": "Lap",
-                "color": "k",
-                "show_mean": True,
-                "colors": colors,
-            },
-            {
-                "x": res["year"],
-                "y": res["optimalFirstPitstopLap"],
-                "title": "Optimal first pit stop lap",
-                "xlabel": "Year",
-                "ylabel": "Lap",
-                "color": "g",
-                "show_mean": True,
-                "text": optimal_txt,
-            },
-            {
-                "x": res["year"],
-                "y": res["averagePitstopDuration"],
-                "title": "Average first pitstop duration",
-                "xlabel": "Year",
-                "ylabel": "Milliseconds",
-                "color": "b",
-                "text": avg_duration_txt,
-            },
-            {
-                "x": res["year"],
-                "y": res["averageNumberOfPitstops"],
-                "title": "Average number of pitstops",
-                "xlabel": "Year",
-                "ylabel": "Pitstop count",
-                "color": "b",
-                "text": avg_count_txt,
-            },
-        ],
-        filename,
+    fig = plt.figure(figsize=IMAGES_PITSTOPS_SIZE, dpi=IMAGES_DPI)
+    ax = fig.add_subplot(3, 1, 1)
+
+    ax.plot(res["year"], res["actualFirstPitstopLap"], "-o", color="k", zorder=1.5)
+    ax.plot(res["year"], res["optimalFirstPitstopLap"], "-o", color="g", zorder=1.75)
+    plt.legend(["Actual", "Optimal"])
+    plt.axhline(
+        res["actualFirstPitstopLap"].mean(),
+        color="k",
+        linestyle="--",
+        zorder=1,
+        alpha=0.5,
     )
+    plt.axhline(
+        res["optimalFirstPitstopLap"].mean(),
+        color="g",
+        linestyle="--",
+        zorder=1.25,
+        alpha=0.5,
+    )
+    ax.scatter(
+        res["year"],
+        res["actualFirstPitstopLap"],
+        label="warning",
+        color=colors,
+        zorder=2,
+    )
+    plt.title("Actual and optimal first pit stop lap")
+    plt.xlabel("Year")
+    plt.ylabel("Lap")
+    plt.text(
+        0.5,
+        0.99,
+        optimal_txt,
+        ha="center",
+        va="top",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+
+    ax = fig.add_subplot(3, 1, 2)
+    ax.plot(res["year"], res["averagePitstopDuration"], "-o", color="b", zorder=1.75)
+    plt.title("Average first pitstop duration")
+    plt.xlabel("Year")
+    plt.ylabel("Milliseconds")
+    plt.text(
+        0.5,
+        0.99,
+        avg_duration_txt,
+        ha="center",
+        va="top",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+
+    ax = fig.add_subplot(3, 1, 3)
+    ax.plot(res["year"], res["averageNumberOfPitstops"], "-o", color="b", zorder=1.75)
+    plt.title("Average number of pitstops")
+    plt.xlabel("Year")
+    plt.ylabel("Pitstop count")
+    plt.text(
+        0.5,
+        0.99,
+        avg_count_txt,
+        ha="center",
+        va="top",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+
+    fig.tight_layout()
+    plt.savefig(filename)
+    plt.close()

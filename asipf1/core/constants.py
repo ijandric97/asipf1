@@ -1,7 +1,3 @@
-from typing import Optional, TypedDict
-
-import pandas as pd
-
 DATA_FOLDER = "data"
 PERCENTAGES_CSV = DATA_FOLDER + "./percentages.csv"
 GAPS_CSV = DATA_FOLDER + "./gaps.csv"
@@ -42,14 +38,3 @@ STATUS_ACCIDENTS = [3, 20, 104]
 STATUS_COLLISIONS = [4, 130, 138]
 STATUS_FINISHED = [1, 11, 12, 13, 14, 15, 16, 17, 18]
 POSITION_DNF = ["R", "D", "E", "W", "F", "N"]
-
-
-class PlotData(TypedDict):
-    x: pd.Series
-    y: pd.Series
-    title: str
-    xlabel: str
-    ylabel: str
-    color: str
-    show_mean: Optional[bool]
-    text: Optional[str]
