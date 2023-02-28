@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from core.constants import IMAGES_PITSTOPS_FOLDER, PITSTOPS_CSV
-from core.utils import get_local_minimum, plot_multiple_by_time
+from core.utils import get_local_minimum, plot_multiple_by_time, plot_regression
 
 
 def generate_dataset() -> pd.DataFrame:
@@ -111,6 +111,9 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
             if local_minimum > 1 and local_minimum < total_laps:
                 min_x = local_minimum
 
+    # print(results)
+    # plot_regression(x, y, regression_model, min_x, f"{year} - {race} - {circuit_id}")
+
     return pd.DataFrame(
         {
             "year": [year],
@@ -148,9 +151,6 @@ def _analyze_averages(df: pd.DataFrame) -> None:
     res.reset_index(inplace=True, drop=True)
 
     plot_multiple_by_time(res, IMAGES_PITSTOPS_FOLDER + "./_pitstop_averages.png")
-
-    sns.boxplot(x=df["year"], y=df["averagePitstopDuration"])
-    plt.show()
 
 
 def analyze(force_generate_dataset: bool = False) -> None:

@@ -1,4 +1,6 @@
-import gap_percentage_dnf_relation
+import gap_dnf
+import optimal_pitstop
 
-gap_percentage_dnf_relation.analyze()
-gap_percentage_dnf_relation.analyze(True)
+if __name__ == "__main__":
+    gap_dnf.analyze()
+    optimal_pitstop.analyze()
