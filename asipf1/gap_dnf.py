@@ -217,6 +217,7 @@ def _analyze_percentages(df: pd.DataFrame) -> None:
     )
     print(text)
     plt.ylim([0, 35])
+    plt.tight_layout()
     plt.savefig(
         f"{IMAGES_DNFS_FOLDER}/percentages.png",
         dpi=IMAGES_DPI,
@@ -313,6 +314,7 @@ def _analyze_gaps(gaps: pd.DataFrame, results: pd.DataFrame) -> None:
     )
     t.set_bbox(dict(facecolor="white", alpha=0.5))
     print(text)
+    plt.tight_layout()
     plt.savefig(
         f"{IMAGES_DNFS_FOLDER}/gaps.png",
         dpi=IMAGES_DPI,
@@ -402,6 +404,7 @@ def _analyze_results(results: pd.DataFrame, gaps: pd.DataFrame) -> None:
         0.5, 0.99, text, ha="center", va="top", transform=ax.transAxes, fontsize=12
     )
     print(text)
+    plt.tight_layout()
     plt.savefig(
         f"{IMAGES_DNFS_FOLDER}/results.png",
         dpi=IMAGES_DPI,

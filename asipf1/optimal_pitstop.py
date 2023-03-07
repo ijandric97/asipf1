@@ -143,6 +143,7 @@ def _analyze_averages(df: pd.DataFrame) -> None:
                 "year": [name],
                 "optimalFirstPitstopLap": group["optimalFirstPitstopLap"].mean(),
                 "actualFirstPitstopLap": group["actualFirstPitstopLap"].mean(),
+                "averageLapTime": group["averageLapTime"].mean(),
                 "averagePitstopDuration": group["averagePitstopDuration"].mean(),
                 "averageNumberOfPitstops": group["averageNumberOfPitstops"].mean(),
             }

@@ -1,3 +1,4 @@
+import textwrap
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -60,15 +61,25 @@ def plot_regression(
 
 
 def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
-    avg_duration_txt = ""
-    avg_count_txt = ""
-
     optimal_txt = (
         "Actual and optimal correlation: "
-        + f"{abs(res['actualFirstPitstopLap'].corr(res['optimalFirstPitstopLap'])):.2f}"
+        + f"{res['actualFirstPitstopLap'].corr(res['optimalFirstPitstopLap']):.2f}"
     )
     avg_duration_txt = f"Average: {round(res['averagePitstopDuration'].mean())} ms"
-    avg_count_txt = f"Average: {res['averageNumberOfPitstops'].mean():.2f}"
+    avg_count_txt = textwrap.dedent(
+        f"""Average: {res['averageNumberOfPitstops'].mean():.2f}
+        Correlation w/ actual: {
+            res['averageNumberOfPitstops'].corr(res['actualFirstPitstopLap']):.2f}
+        Correlation w/ optimal: {
+            res['averageNumberOfPitstops'].corr(res['optimalFirstPitstopLap']):.2f}"""
+    )
+    lap_time_txt = textwrap.dedent(
+        f"""Correlations:
+        Actual Lap: {res['averageLapTime'].corr(res['actualFirstPitstopLap']):.2f}
+        Optimal Lap: {res['averageLapTime'].corr(res['optimalFirstPitstopLap']):.2f}
+        Stop Duration: {res['averageLapTime'].corr(res['averagePitstopDuration']):.2f}
+        Stop Count: {res['averageLapTime'].corr(res['averageNumberOfPitstops']):.2f}"""
+    )
 
     colors = []
     if "hadDNFBefore" in res:
@@ -76,7 +87,7 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
             colors.append("r" if row["hadDNFBefore"] else "k")
 
     fig = plt.figure(figsize=IMAGES_PITSTOPS_SIZE, dpi=IMAGES_DPI)
-    ax = fig.add_subplot(3, 1, 1)
+    ax = fig.add_subplot(2, 2, 1)
 
     ax.plot(res["year"], res["actualFirstPitstopLap"], "-o", color="k", zorder=1.5)
     ax.plot(res["year"], res["optimalFirstPitstopLap"], "-o", color="g", zorder=1.75)
@@ -115,7 +126,7 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
         fontsize=12,
     )
 
-    ax = fig.add_subplot(3, 1, 2)
+    ax = fig.add_subplot(2, 2, 2)
     ax.plot(res["year"], res["averagePitstopDuration"], "-o", color="b", zorder=1.75)
     plt.title("Average first pitstop duration")
     plt.xlabel("Year")
@@ -130,7 +141,7 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
         fontsize=12,
     )
 
-    ax = fig.add_subplot(3, 1, 3)
+    ax = fig.add_subplot(2, 2, 3)
     ax.plot(res["year"], res["averageNumberOfPitstops"], "-o", color="b", zorder=1.75)
     plt.title("Average number of pitstops")
     plt.xlabel("Year")
@@ -139,6 +150,21 @@ def plot_multiple_by_time(res: pd.DataFrame, filename: str) -> None:
         0.5,
         0.99,
         avg_count_txt,
+        ha="center",
+        va="top",
+        transform=ax.transAxes,
+        fontsize=12,
+    )
+
+    ax = fig.add_subplot(2, 2, 4)
+    ax.plot(res["year"], res["averageLapTime"], "-o", color="b", zorder=1.75)
+    plt.title("Average lap time")
+    plt.xlabel("Year")
+    plt.ylabel("Lap Time")
+    plt.text(
+        0.5,
+        0.99,
+        lap_time_txt,
         ha="center",
         va="top",
         transform=ax.transAxes,
