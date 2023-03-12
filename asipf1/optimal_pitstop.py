@@ -74,7 +74,7 @@ def get_pitstop_data(year: int, race: int, degree: int = 3) -> pd.DataFrame:
     del stops  # Optimization
 
     # Get average number of pitstops and then only keep the first pitstops
-    average_number_of_pistops = math.ceil(results["pitstop"].mean())
+    average_number_of_pistops = results["pitstop"].mean()
     results = results[results["pitstop"] == 1]
 
     results["fastestLap"] = pd.to_datetime(
